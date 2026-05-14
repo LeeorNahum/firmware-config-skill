@@ -3,7 +3,7 @@ name: firmware-config
 description: Standard embedded firmware project configuration, board environments, hardware selectors, build flags, library dependencies, and runtime provisioning. Use when working in firmware repos with PlatformIO structure; editing `platformio.ini`, `hardware/`, config headers, board selectors, version flags, provisioning storage, or local value placeholders.
 metadata:
   author: Leeor Nahum
-  version: "0.4.1"
+  version: "1.0.0"
 ---
 
 # Firmware Config
@@ -43,7 +43,7 @@ If configuration is shared across targets but not target-specific, place it as a
 
 Use project-specific names when already established, but preserve the separation. Add `hardware/secrets.example.ini` only when local injected values are needed.
 
-For factual PlatformIO syntax, section names, and option behavior, check the official [`platformio.ini` Project Configuration File](https://docs.platformio.org/en/latest/projectconf/index.html) docs first.
+For factual PlatformIO syntax, section names, and option behavior, check the official ["platformio.ini" Project Configuration File](https://docs.platformio.org/en/latest/projectconf/index.html) docs first.
 
 ## Hardware And Environments
 
