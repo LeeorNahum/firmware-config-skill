@@ -3,7 +3,7 @@ name: firmware-config
 description: Standard embedded firmware project configuration, board environments, hardware selectors, build flags, library dependencies, and runtime provisioning. Use when working in firmware repos with PlatformIO structure; editing `platformio.ini`, `hardware/`, config headers, board selectors, version flags, provisioning storage, or local value placeholders.
 metadata:
   author: Leeor Nahum
-  version: "0.4.0"
+  version: "0.4.1"
 ---
 
 # Firmware Config
@@ -43,7 +43,7 @@ If configuration is shared across targets but not target-specific, place it as a
 
 Use project-specific names when already established, but preserve the separation. Add `hardware/secrets.example.ini` only when local injected values are needed.
 
-For factual PlatformIO syntax, section names, and option behavior, check the official docs first: https://docs.platformio.org/en/latest/projectconf/index.html
+For factual PlatformIO syntax, section names, and option behavior, check the official [`platformio.ini` Project Configuration File](https://docs.platformio.org/en/latest/projectconf/index.html) docs first.
 
 ## Hardware And Environments
 
@@ -134,12 +134,12 @@ Use classic include guards for firmware headers, including `src/**` and `hardwar
 Guard names should be uppercase, specific, and path-aware enough to avoid collisions:
 
 ```cpp
-#ifndef HELPERS_STORAGE_STORAGE_H
-#define HELPERS_STORAGE_STORAGE_H
+#ifndef HARDWARE_DISPLAY_DISPLAY_H
+#define HARDWARE_DISPLAY_DISPLAY_H
 
 // declarations
 
-#endif // HELPERS_STORAGE_STORAGE_H
+#endif // HARDWARE_DISPLAY_DISPLAY_H
 ```
 
 Board headers should include the project identity in the guard:
@@ -179,12 +179,12 @@ Use board macros such as `DISPLAY_SSD1306` to select real implementations. Provi
 Helper example:
 
 ```text
-src/helpers/storage/
-  storage.h
-  storage.cpp
-src/helpers/provisioning/
-  provisioning.h
-  provisioning.cpp
+src/helpers/telemetry/
+  telemetry.h
+  telemetry.cpp
+src/helpers/power/
+  power.h
+  power.cpp
 ```
 
 Helpers can combine hardware wrappers, configuration, and runtime state. They should not contain reusable chip drivers or pin maps.
