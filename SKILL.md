@@ -3,7 +3,7 @@ name: firmware-config
 description: Standard embedded firmware project configuration, board environments, hardware selectors, build flags, library dependencies, and runtime provisioning. Use when working in firmware repos with PlatformIO structure; editing `platformio.ini`, `hardware/`, config headers, board selectors, version flags, provisioning storage, or local value placeholders.
 metadata:
   author: Leeor Nahum
-  version: "0.3.0"
+  version: "0.4.0"
 ---
 
 # Firmware Config
@@ -29,18 +29,17 @@ Preferred firmware repo shape:
 ```text
 platformio.ini
 hardware/
-  <board-or-target>/
-    <board-or-target>.ini
-    <board-or-target>.h
+  <target-name>/
+    <target-name>.ini
+    <target-name>.h
 src/
-  config.h
   main.cpp
   ble/
   hardware/
   helpers/
 ```
 
-`src/config.h` holds project constants: firmware identity, protocol names, and version guards. If configuration is shared across boards but not board-specific, place it as a shared header directly under `hardware/`.
+If configuration is shared across targets but not target-specific, place it as a shared header directly under `hardware/`.
 
 Use project-specific names when already established, but preserve the separation. Add `hardware/secrets.example.ini` only when local injected values are needed.
 
@@ -49,11 +48,11 @@ For factual PlatformIO syntax, section names, and option behavior, check the off
 ## Hardware And Environments
 
 - Keep `platformio.ini` as the coordinator: project metadata, optional `default_envs`, `extra_configs`, shared `[default]`, and shared `[debug]`.
-- Put concrete build environments under `hardware/<board-or-target>/`, not directly in the main `platformio.ini`.
+- Put concrete build environments under `hardware/<target-name>/`, not directly in the main `platformio.ini`.
 - Pair each concrete env `.ini` with a same-named hardware `.h`.
-- Generic hardware config that is not tied to one board may live directly under `hardware/`.
+- Generic hardware config that is not tied to one target may live directly under `hardware/`.
 - Use `[debug]` for shared debug flags and debug-only library settings.
-- Prefer explicit PlatformIO environments for boards, hardware variants, dev/prod targets, debug/release builds, and release targets.
+- Create a separate env for any hardware difference: board revision, hardware variant, production vs. prototype, debug/release builds, or release targets.
 - Keep reusable board or hardware selectors in `hardware/`, not scattered through app logic.
 - Use `-include` board/hardware headers when that is the established repo pattern.
 - Document what each environment builds, flashes, and assumes.
@@ -65,9 +64,9 @@ Root `platformio.ini` pattern:
 [platformio]
 name = Project-Firmware
 description = Short description of the firmware
-default_envs = board_name ; optional, but helpful when one env is the normal target
+default_envs = target_name ; set to the primary or production target
 extra_configs =
-  hardware/*/*.ini
+  hardware/**/*.ini
 
 [default]
 build_flags =
@@ -85,30 +84,26 @@ lib_deps =
 Board/target example:
 
 ```ini
-; hardware/board_name/board_name.ini
-[env:board_name]
+; hardware/target_name/target_name.ini
+[env:target_name]
 platform = https://github.com/example/platform-board-package.git#main
-board = board_name
+board = <pio-board-id>
 framework = arduino
 monitor_speed = 115200
 build_flags =
   ${default.build_flags}
-  -include hardware/board_name/board_name.h
+  -include hardware/target_name/target_name.h
 lib_deps =
   ${default.lib_deps}
   https://github.com/example/Driver_Library.git#main
 ```
 
 ```cpp
-// hardware/board_name/board_name.h
-#ifndef PROJECT_BOARD_NAME_H
-#define PROJECT_BOARD_NAME_H
+// hardware/target_name/target_name.h
+#ifndef PROJECT_TARGET_NAME_H
+#define PROJECT_TARGET_NAME_H
 
 #include <stdint.h>
-
-// Board identity
-#define DEVICE_NAME "Project Device"
-#define BOARD_NAME "board_name"
 
 // I2C
 static const uint8_t SDA_PIN = 8;
@@ -125,10 +120,12 @@ static const uint8_t BATTERY_I2C_ADDRESS = 0x36;
 #define DISPLAY_SSD1306
 #define IMU_LSM6DS3
 
-#endif // PROJECT_BOARD_NAME_H
+#endif // PROJECT_TARGET_NAME_H
 ```
 
-Name the env after the board or target. Add suffixes only when the split exists, e.g. `board_name_dev`, `board_name_prod`, `board_name_debug`.
+Name the env and folder after the hardware target. Create a separate env for any meaningful hardware difference. If two targets are nearly identical, one env can inherit from the other's sections rather than duplicating build flags and lib deps.
+
+Add suffixes only when the split exists, e.g. `target_name_dev`, `target_name_prod`, `target_name_debug`.
 
 ## Header Guards
 
@@ -137,23 +134,23 @@ Use classic include guards for firmware headers, including `src/**` and `hardwar
 Guard names should be uppercase, specific, and path-aware enough to avoid collisions:
 
 ```cpp
-#ifndef HELPERS_API_API_H
-#define HELPERS_API_API_H
+#ifndef HELPERS_STORAGE_STORAGE_H
+#define HELPERS_STORAGE_STORAGE_H
 
 // declarations
 
-#endif // HELPERS_API_API_H
+#endif // HELPERS_STORAGE_STORAGE_H
 ```
 
-Board headers should include the board/project identity in the guard:
+Board headers should include the project identity in the guard:
 
 ```cpp
-#ifndef PROJECT_BOARD_NAME_H
-#define PROJECT_BOARD_NAME_H
+#ifndef PROJECT_TARGET_NAME_H
+#define PROJECT_TARGET_NAME_H
 
 // board constants and selection macros
 
-#endif // PROJECT_BOARD_NAME_H
+#endif // PROJECT_TARGET_NAME_H
 ```
 
 Always include the closing `#endif // GUARD_NAME` comment.
@@ -207,7 +204,7 @@ Local value options:
 | Runtime provisioning / NVS | device credentials, Wi-Fi, per-device API keys | needs provisioning UI or manufacturing flow |
 | Provisioning over Wi-Fi, BLE, serial, or app | user/device setup without recompiling firmware | requires a stable setup UX and validation |
 | `hardware/secrets.ini` build flags | bring-up, demos, temporary bearer tokens | can leak in build logs or generated compile metadata |
-| command-line `-D...` | CI or one-off non-secret build switches | easy to lose, hard to reproduce, risky for credentials |
+| command-line `-D ...` | CI or one-off non-secret build switches | easy to lose, hard to reproduce, risky for credentials |
 
 Recommendation: runtime provisioning first for shipped device credentials; `hardware/secrets.ini` only for local bring-up or temporary keys; command-line macros for non-secret build switches.
 
@@ -218,7 +215,7 @@ Default ignore shape:
 .vscode
 ```
 
-If `hardware/secrets.ini` or any other env secret files exist, ignore them too.
+If `hardware/secrets.ini` or any other local secret files exist, ignore them too.
 
 ## Build Flags And Versions
 
@@ -228,6 +225,7 @@ If `hardware/secrets.ini` or any other env secret files exist, ignore them too.
 - Shared debug flags belong in `[debug]`.
 - Env-specific flags belong in that env's `hardware/<target>/<target>.ini`.
 - Use a release/versioning workflow when bumping versions or publishing artifacts.
+- Always use the spaced `-D FLAG` form rather than `-DFLAG`. PlatformIO accepts both; the spaced form reads clearly and stays consistent across all flags.
 
 Version flag pattern:
 
@@ -265,7 +263,7 @@ When invoked:
 1. Inspect `platformio.ini`, `hardware/`, `src/`, `.gitignore`, and docs.
 2. Identify project constants, hardware selectors, version flags, build environments, runtime provisioning, and local-only values.
 3. Confirm real local-value files are ignored and examples exist when needed.
-4. Check for hardcoded credentials, board assumptions, or API endpoints that should be configurable.
+4. Check for hardcoded credentials, board assumptions, or service endpoints that should be configurable.
 5. Verify board environments, library dependency refs, and build flags are documented.
 6. Report risks by key/file category, never by secret value.
 
